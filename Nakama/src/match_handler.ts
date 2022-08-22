@@ -60,7 +60,7 @@ let matchJoin: nkruntime.MatchJoinFunction = function (context: nkruntime.Contex
 let matchLoop: nkruntime.MatchLoopFunction = function (context: nkruntime.Context, logger: nkruntime.Logger, nakama: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: nkruntime.MatchState, messages: nkruntime.MatchMessage[])
 {
     let gameState = state as GameState;
-    processMessages(messages, gameState, dispatcher);
+    processMessages(messages, gameState, dispatcher, nakama);
     processMatchLoop(gameState, nakama, dispatcher, logger);
     return gameState.endMatch ? null : { state: gameState };
 }
@@ -85,13 +85,18 @@ let matchTerminate: nkruntime.MatchTerminateFunction = function (context: nkrunt
     return { state };
 }
 
-function processMessages(messages: nkruntime.MatchMessage[], gameState: GameState, dispatcher: nkruntime.MatchDispatcher): void
+let matchSignal: nkruntime.MatchSignalFunction = function (context: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: nkruntime.MatchState, data: string)
+{
+    return { state };
+}
+
+function processMessages(messages: nkruntime.MatchMessage[], gameState: GameState, dispatcher: nkruntime.MatchDispatcher, nakama: nkruntime.Nakama): void
 {
     for (let message of messages)
     {
         let opCode: number = message.opCode;
         if (MessagesLogic.hasOwnProperty(opCode))
-            MessagesLogic[opCode](message, gameState, dispatcher);
+            MessagesLogic[opCode](message, gameState, dispatcher, nakama);
         else
             messagesDefaultLogic(message, gameState, dispatcher);
     }
@@ -188,12 +193,13 @@ function matchLoopRoundResults(gameState: GameState, nakama: nkruntime.Nakama, d
     }
 }
 
-function playerWon(message: nkruntime.MatchMessage, gameState: GameState, dispatcher: nkruntime.MatchDispatcher): void 
+function playerWon(message: nkruntime.MatchMessage, gameState: GameState, dispatcher: nkruntime.MatchDispatcher, nakama: nkruntime.Nakama): void 
 {
     if (gameState.scene != Scene.Battle || gameState.countdown > 0)
         return;
 
-    let data: PlayerWonData = JSON.parse(message.data);
+    
+    let data: PlayerWonData = JSON.parse(nakama.binaryToString(message.data));
     let tick: number = data.tick;
     let playerNumber: number = data.playerNumber;
     if (gameState.roundDeclaredWins[tick] == undefined)
@@ -211,12 +217,12 @@ function playerWon(message: nkruntime.MatchMessage, gameState: GameState, dispat
     dispatcher.broadcastMessage(message.opCode, message.data, null, message.sender);
 }
 
-function draw(message: nkruntime.MatchMessage, gameState: GameState, dispatcher: nkruntime.MatchDispatcher): void
+function draw(message: nkruntime.MatchMessage, gameState: GameState, dispatcher: nkruntime.MatchDispatcher, nakama: nkruntime.Nakama): void
 {
     if (gameState.scene != Scene.Battle || gameState.countdown > 0)
         return;
 
-    let data: DrawData = JSON.parse(message.data);
+    let data: DrawData = JSON.parse(nakama.binaryToString(message.data));
     let tick: number = data.tick;
     if (gameState.roundDeclaredDraw[tick] == undefined)
         gameState.roundDeclaredDraw[tick] = 0;
