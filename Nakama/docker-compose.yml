@@ -13,7 +13,7 @@ services:
       - "26257:26257"
       - "8080:8080"
   nakama:
-    image: heroiclabs/nakama:3.13.1
+    image: registry.heroiclabs.com/heroiclabs/nakama:3.13.1
     entrypoint:
       - "/bin/sh"
       - "-ecx"
