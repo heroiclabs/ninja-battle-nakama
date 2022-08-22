@@ -13,6 +13,6 @@
     "typescript": "^4.4.3"
   },
   "dependencies": {
-    "nakama-runtime": "git+https://github.com/heroiclabs/nakama-common.git"
+    "nakama-runtime": "github:heroiclabs/nakama-common"
   }
 }
